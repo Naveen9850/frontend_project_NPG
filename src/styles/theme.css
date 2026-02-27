@@ -150,6 +150,17 @@
     @apply bg-background text-foreground;
   }
 
+  /* Mobile safe area support */
+  @supports (padding: env(safe-area-inset-top)) {
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .pt-safe {
+      padding-top: env(safe-area-inset-top);
+    }
+  }
+
   /**
   * Default typography styles for HTML elements (h1-h4, p, label, button, input).
   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.

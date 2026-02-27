@@ -7,7 +7,6 @@ export interface PredictionResult {
   recommendation?: string | null;
   pollutionImpact?: string;
   analysisType?: string;
-  possible_diseases?: string[] | null;
 }
 
 export interface DetectionDisplayResult extends PredictionResult {
