@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  Upload, Loader2, CheckCircle2, AlertTriangle, XCircle, 
-  Sparkles, TrendingUp, Save, RotateCcw, History, Settings2 
+import {
+  Upload, Loader2, CheckCircle2, AlertTriangle, XCircle,
+  Sparkles, TrendingUp, Save, RotateCcw, History, Settings2, MapPin
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -10,32 +10,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Slider } from "../components/ui/slider";
 import { Input } from "../components/ui/input";
 import { DiseaseStressDisplay } from "../components/detection/disease-stress-display";
-import { PredictionResult, DetectionDisplayResult } from "../types/detection";
-import { 
-  saveConfiguration, 
-  getConfigurations, 
-  saveScan, 
+import { DetectionDisplayResult } from "../types/detection";
+import {
+  saveConfiguration,
+  getConfigurations,
+  saveScan,
   SavedConfiguration,
-  deleteConfiguration 
+  deleteConfiguration
 } from "../utils/storage";
 import { toast } from "sonner";
+import { predictCropStress } from "../services/api";
+import type { ApiPredictionResult } from "../services/api";
+import {
+  getStates,
+  getDistrictsByState,
+  getPollutionForDistrict,
+} from "../data/district-pollution";
 
 const blackSoilCrops = [
-  "Cotton", "Soybean", "Sorghum", "Pigeon Pea", 
+  "Cotton", "Soybean", "Sorghum", "Pigeon Pea",
   "Groundnut", "Sunflower", "Maize", "Chili"
 ];
 
 const growthStages = ["Seedling", "Vegetative", "Flowering", "Maturity"];
-
-const bioticDiseases = [
-  "Cotton Leaf Spot", "Powdery Mildew", "Bacterial Blight", 
-  "Fusarium Wilt", "Root Rot", "Anthracnose"
-];
-
-const abioticCauses = [
-  "Drought", "Heat Stress", "Waterlogging", 
-  "Nutrient Deficiency", "Salinity", "Cold Stress"
-];
 
 export function MobileDetectionPage() {
   const [cropCategory, setCropCategory] = useState("blackSoil");
@@ -43,12 +40,16 @@ export function MobileDetectionPage() {
   const [customCropName, setCustomCropName] = useState("");
   const [selectedStage, setSelectedStage] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<DetectionDisplayResult | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showSavedConfigs, setShowSavedConfigs] = useState(false);
   const [configName, setConfigName] = useState("");
-  
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [pollutionSource, setPollutionSource] = useState<"manual" | "district">("manual");
+
   const [pollution, setPollution] = useState({
     pm25: 45,
     pm10: 80,
@@ -57,9 +58,31 @@ export function MobileDetectionPage() {
     o3: 60,
   });
 
+  // ── Location-based pollution auto-fill ───────────────────────────────────────
+  const handleStateChange = (state: string) => {
+    setSelectedState(state);
+    setSelectedDistrict("");
+  };
+
+  const handleDistrictChange = (district: string) => {
+    setSelectedDistrict(district);
+    const data = getPollutionForDistrict(district);
+    if (data) {
+      setPollution({
+        pm25: data.pm25,
+        pm10: data.pm10,
+        no2: data.no2,
+        so2: data.so2,
+        o3: data.o3,
+      });
+      setPollutionSource("district");
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -69,67 +92,75 @@ export function MobileDetectionPage() {
   };
 
   const handleAnalysis = async () => {
+    if (!imageFile) return;
+
     setIsAnalyzing(true);
     setResult(null);
-    
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    const stressTypes: Array<"Healthy" | "Biotic" | "Abiotic"> = ["Healthy", "Biotic", "Abiotic"];
-    const randomStressType = stressTypes[Math.floor(Math.random() * stressTypes.length)];
-    
-    let mockApiResponse: PredictionResult;
-    
-    if (randomStressType === "Healthy") {
-      mockApiResponse = {
-        stress_type: "Healthy",
-        disease_name: null,
-        stress_cause: null,
-        severity: null,
-        confidence: 0.92 + Math.random() * 0.06,
-        recommendation: "Continue current agricultural practices. Monitor regularly for any changes.",
-      };
-    } else if (randomStressType === "Biotic") {
-      mockApiResponse = {
-        stress_type: "Biotic",
-        disease_name: bioticDiseases[Math.floor(Math.random() * bioticDiseases.length)],
-        stress_cause: null,
-        severity: Math.random() > 0.5 ? "Moderate" : "Severe",
-        confidence: 0.85 + Math.random() * 0.1,
-        recommendation: "Apply targeted fungicide treatment. Monitor humidity levels and ensure proper air circulation.",
-      };
-    } else {
-      mockApiResponse = {
-        stress_type: "Abiotic",
-        disease_name: null,
-        stress_cause: abioticCauses[Math.floor(Math.random() * abioticCauses.length)],
-        severity: Math.random() > 0.5 ? "Moderate" : "Severe",
-        confidence: 0.82 + Math.random() * 0.12,
-        recommendation: "Adjust irrigation schedule and soil nutrient management. Monitor soil moisture levels regularly.",
-      };
-    }
-    
-    const displayResult: DetectionDisplayResult = {
-      ...mockApiResponse,
-      icon: randomStressType === "Healthy" ? CheckCircle2 : randomStressType === "Biotic" ? AlertTriangle : XCircle,
-      color: randomStressType === "Healthy" ? "emerald" : randomStressType === "Biotic" ? "yellow" : "red",
-      pollutionImpact: pollution.pm25 > 50 ? "High" : pollution.pm25 > 30 ? "Moderate" : "Low",
-      analysisType: cropCategory === "other" ? "General Crop Stress Analysis" : "Black Soil Crop Analysis",
-    };
-    
-    setResult(displayResult);
-    setIsAnalyzing(false);
-    
-    // Auto-save scan
-    if (imagePreview) {
-      saveScan({
-        cropName: cropCategory === "blackSoil" ? selectedCrop : customCropName,
-        cropCategory,
+
+    try {
+      const cropName =
+        cropCategory === "blackSoil" ? selectedCrop : customCropName.trim();
+
+      const apiResult: ApiPredictionResult = await predictCropStress({
+        imageFile,
+        cropType: cropName,
         growthStage: selectedStage,
-        imageData: imagePreview,
-        result: displayResult,
         pollution,
       });
-      toast.success("Scan saved to history");
+
+      const displayResult: DetectionDisplayResult = {
+        stress_type: apiResult.stress_type,
+        disease_name: apiResult.disease_name,
+        stress_cause: apiResult.stress_cause,
+        severity: apiResult.severity,
+        confidence: apiResult.confidence,
+        recommendation: apiResult.recommendation,
+        possible_diseases: apiResult.possible_diseases,
+        pollutionImpact:
+          pollution.pm25 > 50
+            ? "High"
+            : pollution.pm25 > 30
+              ? "Moderate"
+              : "Low",
+        analysisType:
+          cropCategory === "other"
+            ? "General Crop Stress Analysis"
+            : "Black Soil Crop Analysis",
+        icon:
+          apiResult.stress_type === "Healthy"
+            ? CheckCircle2
+            : apiResult.stress_type === "Biotic"
+              ? AlertTriangle
+              : XCircle,
+        color:
+          apiResult.stress_type === "Healthy"
+            ? "emerald"
+            : apiResult.stress_type === "Biotic"
+              ? "yellow"
+              : "red",
+      };
+
+      setResult(displayResult);
+
+      // Auto-save scan
+      if (imagePreview) {
+        saveScan({
+          cropName: cropCategory === "blackSoil" ? selectedCrop : customCropName,
+          cropCategory,
+          growthStage: selectedStage,
+          imageData: imagePreview,
+          result: displayResult,
+          pollution,
+        });
+        toast.success("Scan saved to history");
+      }
+    } catch (err: any) {
+      console.error("Prediction error:", err);
+      toast.error(
+        err.message || "Failed to connect to the AI backend. Is the server running?"
+      );
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -138,7 +169,7 @@ export function MobileDetectionPage() {
       toast.error("Please enter a configuration name");
       return;
     }
-    
+
     saveConfiguration({
       name: configName,
       cropCategory,
@@ -147,7 +178,7 @@ export function MobileDetectionPage() {
       growthStage: selectedStage,
       pollution,
     });
-    
+
     toast.success("Configuration saved successfully");
     setConfigName("");
     setShowConfigModal(false);
@@ -174,7 +205,7 @@ export function MobileDetectionPage() {
   };
 
   const savedConfigs = getConfigurations();
-  const canAnalyze = imagePreview && selectedStage && 
+  const canAnalyze = imageFile && selectedStage &&
     (cropCategory === "blackSoil" ? selectedCrop : customCropName.trim());
 
   return (
@@ -196,7 +227,7 @@ export function MobileDetectionPage() {
           <Settings2 className="w-4 h-4 mr-1.5" />
           Load Config
         </Button>
-        
+
         <Button
           onClick={handleNewScan}
           variant="outline"
@@ -239,7 +270,7 @@ export function MobileDetectionPage() {
       {/* Crop Selection */}
       <div className="p-4 rounded-xl bg-slate-800/50 border border-emerald-500/20 backdrop-blur-sm mb-6 space-y-4">
         <Label className="text-emerald-400">Crop Selection</Label>
-        
+
         <div>
           <Label className="text-sm text-slate-300 mb-2 block">Category</Label>
           <div className="grid grid-cols-2 gap-2">
@@ -249,26 +280,24 @@ export function MobileDetectionPage() {
                 setCropCategory("blackSoil");
                 setCustomCropName("");
               }}
-              className={`p-3 rounded-lg border-2 transition-all ${
-                cropCategory === "blackSoil"
-                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
-                  : "border-slate-700 bg-slate-900/50 text-slate-400"
-              }`}
+              className={`p-3 rounded-lg border-2 transition-all ${cropCategory === "blackSoil"
+                ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+                : "border-slate-700 bg-slate-900/50 text-slate-400"
+                }`}
             >
               <div className="text-xs">Black Soil</div>
             </motion.button>
-            
+
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => {
                 setCropCategory("other");
                 setSelectedCrop("");
               }}
-              className={`p-3 rounded-lg border-2 transition-all ${
-                cropCategory === "other"
-                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
-                  : "border-slate-700 bg-slate-900/50 text-slate-400"
-              }`}
+              className={`p-3 rounded-lg border-2 transition-all ${cropCategory === "other"
+                ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+                : "border-slate-700 bg-slate-900/50 text-slate-400"
+                }`}
             >
               <div className="text-xs">Other Crops</div>
             </motion.button>
@@ -316,21 +345,92 @@ export function MobileDetectionPage() {
         </div>
       </div>
 
+      {/* Location (State/District) Selection */}
+      <div className="p-4 rounded-xl bg-slate-800/50 border border-emerald-500/20 backdrop-blur-sm mb-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-emerald-500/20">
+            <MapPin className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <Label className="text-emerald-400">Location</Label>
+            <p className="text-[10px] text-slate-500">Auto-fills air quality values</p>
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-sm text-slate-300 mb-2 block">State</Label>
+          <Select value={selectedState} onValueChange={handleStateChange}>
+            <SelectTrigger className="bg-slate-900/50 border-emerald-500/30">
+              <SelectValue placeholder="Select state" />
+            </SelectTrigger>
+            <SelectContent>
+              {getStates().map((state) => (
+                <SelectItem key={state} value={state}>
+                  {state}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedState && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.3 }}
+          >
+            <Label className="text-sm text-slate-300 mb-2 block">District</Label>
+            <Select value={selectedDistrict} onValueChange={handleDistrictChange}>
+              <SelectTrigger className="bg-slate-900/50 border-emerald-500/30">
+                <SelectValue placeholder="Select district" />
+              </SelectTrigger>
+              <SelectContent>
+                {getDistrictsByState(selectedState).map((d) => (
+                  <SelectItem key={d.district} value={d.district}>
+                    {d.district}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </motion.div>
+        )}
+
+        {pollutionSource === "district" && selectedDistrict && (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className="text-[10px] text-emerald-300">
+              Values auto-filled for <strong>{selectedDistrict}</strong>, {selectedState}
+            </span>
+          </motion.div>
+        )}
+      </div>
+
       {/* Pollution Parameters */}
       <div className="p-4 rounded-xl bg-slate-800/50 border border-emerald-500/20 backdrop-blur-sm mb-6 space-y-4">
         <div className="flex items-center justify-between">
           <Label className="text-emerald-400">Pollution Parameters</Label>
-          <Button
-            onClick={() => setShowConfigModal(true)}
-            size="sm"
-            variant="ghost"
-            className="text-xs text-slate-400"
-          >
-            <Save className="w-3.5 h-3.5 mr-1" />
-            Save Config
-          </Button>
+          <div className="flex items-center gap-2">
+            {pollutionSource === "district" && (
+              <span className="text-[10px] text-emerald-500/60 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                {selectedDistrict}
+              </span>
+            )}
+            <Button
+              onClick={() => setShowConfigModal(true)}
+              size="sm"
+              variant="ghost"
+              className="text-xs text-slate-400"
+            >
+              <Save className="w-3.5 h-3.5 mr-1" />
+              Save Config
+            </Button>
+          </div>
         </div>
-        
+
         {[
           { key: "pm25", label: "PM2.5", unit: "μg/m³", max: 150 },
           { key: "pm10", label: "PM10", unit: "μg/m³", max: 200 },
@@ -347,7 +447,10 @@ export function MobileDetectionPage() {
             </div>
             <Slider
               value={[pollution[param.key as keyof typeof pollution]]}
-              onValueChange={([value]) => setPollution({ ...pollution, [param.key]: value })}
+              onValueChange={([value]) => {
+                setPollution({ ...pollution, [param.key]: value });
+                setPollutionSource("manual");
+              }}
               max={param.max}
               step={1}
               className="[&_[role=slider]]:bg-emerald-500 [&_[role=slider]]:border-emerald-400"
@@ -418,19 +521,17 @@ export function MobileDetectionPage() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                  className={`p-3 rounded-xl bg-gradient-to-br ${
-                    result.color === "emerald"
-                      ? "from-emerald-500/20 to-lime-500/20"
-                      : result.color === "yellow"
+                  className={`p-3 rounded-xl bg-gradient-to-br ${result.color === "emerald"
+                    ? "from-emerald-500/20 to-lime-500/20"
+                    : result.color === "yellow"
                       ? "from-yellow-500/20 to-orange-500/20"
                       : "from-red-500/20 to-pink-500/20"
-                  }`}
+                    }`}
                 >
-                  <result.icon className={`w-8 h-8 ${
-                    result.color === "emerald" ? "text-emerald-400" :
+                  <result.icon className={`w-8 h-8 ${result.color === "emerald" ? "text-emerald-400" :
                     result.color === "yellow" ? "text-yellow-400" :
-                    "text-red-400"
-                  }`} />
+                      "text-red-400"
+                    }`} />
                 </motion.div>
                 <div>
                   <h3 className="text-xl mb-0.5">{result.stress_type} Status</h3>
@@ -464,11 +565,10 @@ export function MobileDetectionPage() {
                     strokeWidth="8"
                     fill="none"
                     strokeLinecap="round"
-                    className={`${
-                      result.color === "emerald" ? "text-emerald-500" :
+                    className={`${result.color === "emerald" ? "text-emerald-500" :
                       result.color === "yellow" ? "text-yellow-500" :
-                      "text-red-500"
-                    }`}
+                        "text-red-500"
+                      }`}
                     initial={{ strokeDasharray: "0 352" }}
                     animate={{ strokeDasharray: `${(result.confidence * 100) / 100 * 352} 352` }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
@@ -486,19 +586,17 @@ export function MobileDetectionPage() {
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-xs text-slate-400">Severity</span>
-                    <span className={`text-xs font-medium ${
-                      result.severity === "Severe" ? "text-red-400" :
+                    <span className={`text-xs font-medium ${result.severity === "Severe" ? "text-red-400" :
                       result.severity === "Moderate" ? "text-yellow-400" :
-                      "text-emerald-400"
-                    }`}>{result.severity}</span>
+                        "text-emerald-400"
+                      }`}>{result.severity}</span>
                   </div>
                   <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
                     <motion.div
-                      className={`h-full ${
-                        result.severity === "Severe" 
-                          ? "bg-gradient-to-r from-red-500 to-red-600" 
-                          : "bg-gradient-to-r from-yellow-500 to-orange-500"
-                      }`}
+                      className={`h-full ${result.severity === "Severe"
+                        ? "bg-gradient-to-r from-red-500 to-red-600"
+                        : "bg-gradient-to-r from-yellow-500 to-orange-500"
+                        }`}
                       initial={{ width: 0 }}
                       animate={{ width: result.severity === "Severe" ? "85%" : "55%" }}
                       transition={{ duration: 1, ease: "easeOut" }}
@@ -507,13 +605,12 @@ export function MobileDetectionPage() {
                 </div>
               )}
 
-              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs ${
-                result.pollutionImpact === "High"
-                  ? "bg-red-500/20 text-red-400"
-                  : result.pollutionImpact === "Moderate"
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs ${result.pollutionImpact === "High"
+                ? "bg-red-500/20 text-red-400"
+                : result.pollutionImpact === "Moderate"
                   ? "bg-yellow-500/20 text-yellow-400"
                   : "bg-emerald-500/20 text-emerald-400"
-              }`}>
+                }`}>
                 <TrendingUp className="w-3.5 h-3.5" />
                 Pollution: {result.pollutionImpact}
               </div>

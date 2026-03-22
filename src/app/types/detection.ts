@@ -5,6 +5,9 @@ export interface PredictionResult {
   severity?: string | null;
   confidence: number;
   recommendation?: string | null;
+  predicted_class?: string;
+  processing_time_ms?: number;
+  possible_diseases?: string[] | null;
   pollutionImpact?: string;
   analysisType?: string;
 }

@@ -1,9 +1,11 @@
 import { Link, useLocation } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  Home, Activity, BarChart3, Grid3x3, Settings, 
-  ChevronLeft, ChevronRight, Sprout 
+import {
+  Home, Activity, BarChart3, Grid3x3, Settings,
+  ChevronLeft, ChevronRight, Sprout
 } from "lucide-react";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { LanguageSelector } from "./language-selector";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -12,13 +14,14 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const location = useLocation();
+  const { t } = useLanguage();
 
   const navItems = [
-    { path: "/", icon: Home, label: "Introduction" },
-    { path: "/detection", icon: Activity, label: "Detection" },
-    { path: "/analytics", icon: BarChart3, label: "Analytics" },
-    { path: "/crops", icon: Grid3x3, label: "Crop Intelligence" },
-    { path: "/settings", icon: Settings, label: "Settings" },
+    { path: "/", icon: Home, label: t("nav.introduction") },
+    { path: "/detection", icon: Activity, label: t("nav.detection") },
+    { path: "/analytics", icon: BarChart3, label: t("nav.analytics") },
+    { path: "/crops", icon: Grid3x3, label: t("nav.crops") },
+    { path: "/settings", icon: Settings, label: t("nav.settings") },
   ];
 
   return (
@@ -33,7 +36,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-lime-500 shrink-0">
             <Sprout className="w-6 h-6 text-slate-900" />
           </div>
-          
+
           <AnimatePresence mode="wait">
             {!isCollapsed && (
               <motion.div
@@ -44,9 +47,9 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
                 className="overflow-hidden"
               >
                 <h1 className="text-sm tracking-tight leading-tight whitespace-nowrap">
-                  Black Soil Crop
+                  {t("app.title")}
                 </h1>
-                <p className="text-xs text-emerald-400 whitespace-nowrap">Intelligence System</p>
+                <p className="text-xs text-emerald-400 whitespace-nowrap">{t("app.subtitle")}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -59,7 +62,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-            
+
             return (
               <Link
                 key={item.path}
@@ -70,8 +73,8 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
                   whileHover={{ x: 4 }}
                   className={`
                     relative flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200
-                    ${isActive 
-                      ? 'bg-emerald-500/10 text-emerald-400' 
+                    ${isActive
+                      ? 'bg-emerald-500/10 text-emerald-400'
                       : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800/50'
                     }
                   `}
@@ -84,9 +87,9 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
-                  
+
                   <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-emerald-400' : ''}`} />
-                  
+
                   <AnimatePresence mode="wait">
                     {!isCollapsed && (
                       <motion.span
@@ -112,6 +115,20 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         </div>
       </nav>
 
+      {/* Language Selector */}
+      <AnimatePresence mode="wait">
+        {!isCollapsed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="px-3 pb-2"
+          >
+            <LanguageSelector />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Collapse Toggle */}
       <div className="p-3 border-t border-emerald-500/10">
         <motion.button
@@ -125,7 +142,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           ) : (
             <>
               <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm">Collapse</span>
+              <span className="text-sm">{t("nav.collapse")}</span>
             </>
           )}
         </motion.button>

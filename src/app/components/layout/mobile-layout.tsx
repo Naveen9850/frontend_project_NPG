@@ -3,17 +3,20 @@ import { Outlet, useLocation } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Home, Activity, BarChart3, Grid3x3, Settings, Menu, X } from "lucide-react";
 import { Link } from "react-router";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { LanguageSelector } from "./language-selector";
 
 export function MobileLayout() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const location = useLocation();
+  const { t } = useLanguage();
 
   const navItems = [
-    { path: "/", icon: Home, label: "Home" },
-    { path: "/detection", icon: Activity, label: "Scan" },
-    { path: "/analytics", icon: BarChart3, label: "Analytics" },
-    { path: "/crops", icon: Grid3x3, label: "Crops" },
-    { path: "/settings", icon: Settings, label: "Settings" },
+    { path: "/", icon: Home, label: t("nav.home") },
+    { path: "/detection", icon: Activity, label: t("nav.scan") },
+    { path: "/analytics", icon: BarChart3, label: t("nav.analytics") },
+    { path: "/crops", icon: Grid3x3, label: t("nav.crops") },
+    { path: "/settings", icon: Settings, label: t("nav.settings") },
   ];
 
   // Close mobile menu when route changes
@@ -31,21 +34,24 @@ export function MobileLayout() {
               <Activity className="w-5 h-5 text-slate-900" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold">Black Soil</h1>
-              <p className="text-xs text-emerald-400">Crop Intelligence</p>
+              <h1 className="text-sm font-semibold">{t("app.mobileTitle")}</h1>
+              <p className="text-xs text-emerald-400">{t("app.mobileSubtitle")}</p>
             </div>
           </div>
-          
-          <button
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="p-2 rounded-lg hover:bg-slate-800/50 transition-colors"
-          >
-            {showMobileMenu ? (
-              <X className="w-6 h-6 text-emerald-400" />
-            ) : (
-              <Menu className="w-6 h-6 text-slate-400" />
-            )}
-          </button>
+
+          <div className="flex items-center gap-2">
+            <LanguageSelector compact />
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="p-2 rounded-lg hover:bg-slate-800/50 transition-colors"
+            >
+              {showMobileMenu ? (
+                <X className="w-6 h-6 text-emerald-400" />
+              ) : (
+                <Menu className="w-6 h-6 text-slate-400" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -62,16 +68,15 @@ export function MobileLayout() {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
-                
+
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                      isActive
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
                         ? "bg-emerald-500/10 text-emerald-400"
                         : "text-slate-400 hover:bg-slate-800/50"
-                    }`}
+                      }`}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="text-sm font-medium">{item.label}</span>
@@ -94,7 +99,7 @@ export function MobileLayout() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-            
+
             return (
               <Link
                 key={item.path}
@@ -103,9 +108,8 @@ export function MobileLayout() {
               >
                 <motion.div
                   whileTap={{ scale: 0.9 }}
-                  className={`flex flex-col items-center gap-1 ${
-                    isActive ? "text-emerald-400" : "text-slate-400"
-                  }`}
+                  className={`flex flex-col items-center gap-1 ${isActive ? "text-emerald-400" : "text-slate-400"
+                    }`}
                 >
                   <div className="relative">
                     <Icon className="w-6 h-6" />

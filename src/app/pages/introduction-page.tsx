@@ -2,31 +2,34 @@ import { motion } from "motion/react";
 import { Link } from "react-router";
 import { Sparkles, ArrowRight, Cpu, Wind, Activity, Grid3x3 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export function IntroductionPage() {
+  const { t } = useLanguage();
+
   const features = [
     {
       icon: Cpu,
-      title: "Multimodal Detection",
-      description: "Combines RGB imagery, multispectral data, and environmental sensors for comprehensive analysis",
+      title: t("intro.feature1Title"),
+      description: t("intro.feature1Desc"),
       gradient: "from-emerald-500/20 to-lime-500/20",
     },
     {
       icon: Wind,
-      title: "Pollution-Aware Analysis",
-      description: "Integrates air quality parameters (PM2.5, PM10, NO₂, SO₂, O₃) for accurate stress correlation",
+      title: t("intro.feature2Title"),
+      description: t("intro.feature2Desc"),
       gradient: "from-blue-500/20 to-cyan-500/20",
     },
     {
       icon: Activity,
-      title: "Biotic vs Abiotic Classification",
-      description: "Advanced AI distinguishes between disease/pest stress and environmental stress factors",
+      title: t("intro.feature3Title"),
+      description: t("intro.feature3Desc"),
       gradient: "from-yellow-500/20 to-orange-500/20",
     },
     {
       icon: Grid3x3,
-      title: "Multi-Crop Intelligence",
-      description: "Specialized models for 8 black soil crops with 94.8% average accuracy",
+      title: t("intro.feature4Title"),
+      description: t("intro.feature4Desc"),
       gradient: "from-purple-500/20 to-pink-500/20",
     },
   ];
@@ -37,7 +40,7 @@ export function IntroductionPage() {
       <div className="relative flex-1 flex items-center justify-center py-20 px-6">
         {/* Radial glow behind hero */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/20 rounded-full blur-[150px] pointer-events-none" />
-        
+
         {/* Content */}
         <div className="relative z-10 max-w-5xl mx-auto text-center">
           {/* Badge */}
@@ -48,7 +51,7 @@ export function IntroductionPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm mb-8"
           >
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm text-emerald-300">Multimodal AI-Powered Detection System</span>
+            <span className="text-sm text-emerald-300">{t("intro.badge")}</span>
           </motion.div>
 
           {/* Main Title */}
@@ -58,9 +61,9 @@ export function IntroductionPage() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="text-5xl md:text-7xl mb-6 tracking-tight leading-tight"
           >
-            <span className="block">Black Soil Crop Stress</span>
+            <span className="block">{t("intro.heroTitle1")}</span>
             <span className="block mt-2 bg-gradient-to-r from-emerald-400 via-lime-400 to-emerald-400 bg-clip-text text-transparent">
-              Intelligence System
+              {t("intro.heroTitle2")}
             </span>
           </motion.h1>
 
@@ -71,7 +74,7 @@ export function IntroductionPage() {
             transition={{ duration: 0.7, delay: 0.4 }}
             className="text-xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed"
           >
-            AI-powered multimodal detection of biotic and abiotic stress in black soil crops
+            {t("intro.heroSubtitle")}
           </motion.p>
 
           {/* CTA Buttons */}
@@ -87,7 +90,7 @@ export function IntroductionPage() {
                 className="group relative overflow-hidden bg-gradient-to-r from-emerald-500 to-lime-500 text-slate-900 hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 px-8 py-6 text-lg"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Start Detection
+                  {t("intro.startDetection")}
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
@@ -110,7 +113,7 @@ export function IntroductionPage() {
                 variant="outline"
                 className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50 backdrop-blur-sm px-8 py-6 text-lg"
               >
-                View Analytics
+                {t("intro.viewAnalytics")}
               </Button>
             </Link>
           </motion.div>
@@ -134,8 +137,8 @@ export function IntroductionPage() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.9 + i * 0.1 }}
-                  whileHover={{ 
-                    scale: 1.03, 
+                  whileHover={{
+                    scale: 1.03,
                     y: -8,
                     transition: { duration: 0.2 }
                   }}
@@ -143,13 +146,13 @@ export function IntroductionPage() {
                 >
                   {/* Glow effect on hover */}
                   <div className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300 bg-gradient-to-br ${feature.gradient}`} />
-                  
+
                   {/* Card */}
                   <div className="relative p-6 rounded-2xl bg-slate-800/50 border border-emerald-500/20 backdrop-blur-sm h-full transition-all duration-300 group-hover:border-emerald-500/40">
                     <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${feature.gradient} mb-4`}>
                       <Icon className="w-6 h-6 text-emerald-400" />
                     </div>
-                    
+
                     <h3 className="text-lg mb-2">{feature.title}</h3>
                     <p className="text-sm text-slate-400 leading-relaxed">
                       {feature.description}

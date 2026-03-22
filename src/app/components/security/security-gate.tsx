@@ -2,24 +2,26 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Lock, Fingerprint, Eye, EyeOff, Check } from "lucide-react";
 import { Button } from "../ui/button";
+import { useLanguage } from "../../../i18n/LanguageContext";
 
 interface SecurityGateProps {
   onUnlock: () => void;
 }
 
 export function SecurityGate({ onUnlock }: SecurityGateProps) {
+  const { t } = useLanguage();
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState(false);
   const [authMethod, setAuthMethod] = useState<"pin" | "biometric">("pin");
-  
+
   const CORRECT_PIN = "1234"; // In real app, this would be securely stored
 
   const handlePinInput = (digit: string) => {
     if (pin.length < 4) {
       const newPin = pin + digit;
       setPin(newPin);
-      
+
       if (newPin.length === 4) {
         setTimeout(() => {
           if (newPin === CORRECT_PIN) {
@@ -52,7 +54,7 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
     <div className="fixed inset-0 z-50 bg-[#0F172A] flex flex-col items-center justify-center p-6">
       {/* Background glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-[150px]" />
-      
+
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -68,31 +70,29 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
           >
             <Lock className="w-10 h-10 text-slate-900" />
           </motion.div>
-          
-          <h1 className="text-3xl mb-2">Welcome Back</h1>
-          <p className="text-slate-400">Unlock to access your crop intelligence system</p>
+
+          <h1 className="text-3xl mb-2">{t("security.welcomeBack")}</h1>
+          <p className="text-slate-400">{t("security.unlockMessage")}</p>
         </div>
 
         {/* Auth Method Toggle */}
         <div className="flex gap-2 mb-8">
           <button
             onClick={() => setAuthMethod("pin")}
-            className={`flex-1 py-3 rounded-xl border transition-all ${
-              authMethod === "pin"
+            className={`flex-1 py-3 rounded-xl border transition-all ${authMethod === "pin"
                 ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400"
                 : "bg-slate-800/50 border-slate-700 text-slate-400"
-            }`}
+              }`}
           >
             <Lock className="w-5 h-5 mx-auto" />
           </button>
-          
+
           <button
             onClick={() => setAuthMethod("biometric")}
-            className={`flex-1 py-3 rounded-xl border transition-all ${
-              authMethod === "biometric"
+            className={`flex-1 py-3 rounded-xl border transition-all ${authMethod === "biometric"
                 ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400"
                 : "bg-slate-800/50 border-slate-700 text-slate-400"
-            }`}
+              }`}
           >
             <Fingerprint className="w-5 h-5 mx-auto" />
           </button>
@@ -109,7 +109,7 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
               {/* PIN Display */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-slate-400">Enter PIN</span>
+                  <span className="text-sm text-slate-400">{t("security.enterPin")}</span>
                   <button
                     onClick={() => setShowPin(!showPin)}
                     className="p-1 text-slate-400 hover:text-emerald-400 transition-colors"
@@ -117,7 +117,7 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
                     {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                
+
                 <div className="flex justify-center gap-4 mb-2">
                   {[0, 1, 2, 3].map((i) => (
                     <motion.div
@@ -127,26 +127,25 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
                         x: error ? [-10, 10, -10, 10, 0] : 0,
                       }}
                       transition={{ duration: 0.4 }}
-                      className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center text-2xl transition-all ${
-                        error
+                      className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center text-2xl transition-all ${error
                           ? "border-red-500/50 bg-red-500/10 text-red-400"
                           : pin.length > i
-                          ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
-                          : "border-slate-700 bg-slate-800/50 text-slate-600"
-                      }`}
+                            ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
+                            : "border-slate-700 bg-slate-800/50 text-slate-600"
+                        }`}
                     >
                       {pin.length > i ? (showPin ? pin[i] : "●") : ""}
                     </motion.div>
                   ))}
                 </div>
-                
+
                 {error && (
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="text-xs text-red-400 text-center"
                   >
-                    Incorrect PIN. Try again.
+                    {t("security.incorrectPin")}
                   </motion.p>
                 )}
               </div>
@@ -163,15 +162,15 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
                     {num}
                   </motion.button>
                 ))}
-                
+
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={handleDelete}
                   className="h-16 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-sm text-slate-400 transition-colors"
                 >
-                  Delete
+                  {t("security.delete")}
                 </motion.button>
-                
+
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handlePinInput("0")}
@@ -179,7 +178,7 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
                 >
                   0
                 </motion.button>
-                
+
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
@@ -188,12 +187,12 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
                   }}
                   className="h-16 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-sm text-slate-400 transition-colors"
                 >
-                  Clear
+                  {t("security.clear")}
                 </motion.button>
               </div>
 
               <p className="text-xs text-center text-slate-500">
-                Demo PIN: 1234
+                {t("security.demoPin")}
               </p>
             </motion.div>
           ) : (
@@ -218,18 +217,18 @@ export function SecurityGate({ onUnlock }: SecurityGateProps) {
               >
                 <Fingerprint className="w-16 h-16 text-emerald-400" />
               </motion.div>
-              
-              <h3 className="text-xl mb-2">Touch Sensor</h3>
+
+              <h3 className="text-xl mb-2">{t("security.touchSensor")}</h3>
               <p className="text-sm text-slate-400 mb-8">
-                Place your finger on the sensor to authenticate
+                {t("security.placeFinger")}
               </p>
-              
+
               <Button
                 onClick={handleBiometric}
                 className="bg-gradient-to-r from-emerald-500 to-lime-500 text-slate-900 hover:shadow-xl hover:shadow-emerald-500/50"
               >
                 <Fingerprint className="w-4 h-4 mr-2" />
-                Simulate Biometric Auth
+                {t("security.simulateBiometric")}
               </Button>
             </motion.div>
           )}
